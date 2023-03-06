@@ -22,10 +22,10 @@ spec:
         - name: USERNAME
           valueFrom:
             secretKeyRef:
-              name: your-secret
-              key: username
+              name: api-username
+              key: api-username
         - name: PASSWORD
           valueFrom:
             secretKeyRef:
-              name: your-secret
-              key: password
+              name: api-password
+              key: api-password
