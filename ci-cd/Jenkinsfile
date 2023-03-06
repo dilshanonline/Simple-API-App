@@ -1,0 +1,101 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE_NAME = 'api-app-image'
+        DOCKER_REGISTRY = 'docker-registry'
+        SONAR_TOKEN = credentials('sonar-token-id')
+        GIT_CREDENTIALS = credentials('git-credentials-id')
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git url: 'https://github.com/dilshanonline/Simple-API-App.git', credentialsId: env.GIT_CREDENTIALS
+            }
+        }
+
+        stage('Code Quality Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube-server') {
+                    sh 'mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $DOCKER_IMAGE_NAME:${env.BUILD_NUMBER} .'
+            }
+            post {
+                success {
+                    slackSend (color: '#36a64f', message: "Build successful for branch: ${env.BRANCH_NAME}")
+                }
+                failure {
+                    slackSend (color: '#ff0000', message: "Build failed for branch: ${env.BRANCH_NAME}")
+                    error 'Build failed'
+                }
+            }
+        }
+
+
+        stage('Test Docker Image') {
+            steps {
+                sh 'docker run --rm $DOCKER_IMAGE_NAME:${env.BUILD_NUMBER} pytest'
+            }
+            post {
+                success {
+                    slackSend (color: '#36a64f', message: "Docker image test successful for branch: ${env.BRANCH_NAME}")
+                }
+                failure {
+                    slackSend (color: '#ff0000', message: "Docker image test failed for branch: ${env.BRANCH_NAME}")
+                    error 'Push failed'
+                }
+            }
+        }
+
+        
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-registry-credentials-id', usernameVariable: 's', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh 'docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD $DOCKER_REGISTRY'
+                    sh 'docker tag $DOCKER_IMAGE_NAME:${env.BUILD_NUMBER} $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${env.BUILD_NUMBER}'
+                    sh 'docker push $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:${env.BUILD_NUMBER'
+                }
+            }
+            post {
+                success {
+                    slackSend (color: '#36a64f', message: "Push successful for branch: ${env.BRANCH_NAME}")
+                }
+                failure {
+                    slackSend (color: '#ff0000', message: "Push failed for branch: ${env.BRANCH_NAME}")
+                    error 'Push failed'
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            deleteDir()
+        }
+    }
+}
+
+def slackSend(def params) {
+    def slackBaseUrl = 'https://slack.com/api/chat.postMessage'
+    def response = sh(script: """
+        curl -X POST -H 'Content-type: application/json' -d '{
+            \"channel\": \"your-slack-channel\",
+            \"text\": \"${params.message}\",
+            \"attachments\": [
+                {
+                    \"color\": \"${params.color}\"
+                }
+            ],
+            \"token\": \"${params.token}\"
+        }' ${slackBaseUrl}
+    """, returnStdout: true)
+    echo(response)
+}
+
