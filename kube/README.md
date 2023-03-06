@@ -1,3 +1,5 @@
+# Manifest files
+This ingress resource exposes the application to the outside world and specifies the basic authentication configuration.need to replace my-domain with the hostname you want to use to access the application.
 
 # Adding Secret 
 
