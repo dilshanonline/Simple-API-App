@@ -1,5 +1,19 @@
+﻿# Simple API App
 
-# Terraform to provisioning GKE
-In this example, first define the provider block for Google Cloud Platform, specifying the credentials file and project ID. Then define the GKE cluster resource, giving it a name, location, and specifying the initial number of nodes, also define a node pool with some basic configuration options.
+ 1. Build the docker image by running the following command in the root directory of your application:
 
-Next, configure the Google Cloud Storage backend for storing the state file, specifying a bucket name and prefix. Finally, enable state file locks by including the lock_table parameter in the backend configuration block. This will ensure that only one user can modify the state file at a time, preventing conflicts and ensuring consistency.
+	`docker build -t api-app:latest .`
+
+2. Run the docker container by running the following command:
+
+	`docker run -p 8080:8080 api-app`
+
+3. Test the API endpoints by opening a 
+web browser and navigating to 
+`http://localhost:8080/planning-tech` and 
+`http://localhost:8080/world`.
+
+	or use the curl command in a terminal,
+`curl http://localhost:8080/planning-tech` and 
+`curl http://localhost:8080/world`
+
