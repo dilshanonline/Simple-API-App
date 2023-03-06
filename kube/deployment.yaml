@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-app-deployment
+  namespace: api-app-namespace
+spec:
+  selector:
+    matchLabels:
+      app: api-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: api-app
+    spec:
+      containers:
+      - name: api-app-container
+        image: docker-registry/api-app-image:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: your-secret
+              key: username
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: your-secret
+              key: password
